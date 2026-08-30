@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Immutable RAW records with ingestion and file lineage metadata
+    database: DBT_MINI_PROJECT
+    schema: RAW
+
+    tables:
+      - name: raw_customers
+        identifier: RAW_CUSTOMERS
+        description: Customer records ingested from CSV
+
+      - name: raw_applications
+        identifier: RAW_APPLICATIONS
+        description: Application records ingested from JSON
+
+      - name: raw_payments
+        identifier: RAW_PAYMENTS
+        description: Payment records ingested from Parquet
