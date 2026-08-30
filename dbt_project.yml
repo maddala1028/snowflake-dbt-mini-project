@@ -1,0 +1,40 @@
+name: snowflake_dbt_mini_project
+version: 1.0.0
+config-version: 2
+
+profile: snowflake_dbt_mini_project
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  snowflake_dbt_mini_project:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+
+seeds:
+  snowflake_dbt_mini_project:
+    +quote_columns: false
+    customers:
+      +column_types:
+        customer_id: varchar(20)
+    applications:
+      +column_types:
+        application_id: varchar(20)
+        customer_id: varchar(20)
+    payments:
+      +column_types:
+        payment_id: varchar(20)
+        application_id: varchar(20)
+
+snapshots:
+  snowflake_dbt_mini_project:
+    +target_schema: snapshots
+

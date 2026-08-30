@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: Cleaned customer records at one row per customer.
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+      - name: email
+        tests: [not_null]
+      - name: customer_status
+        tests:
+          - accepted_values:
+              values: ['ACTIVE', 'INACTIVE']
+
+  - name: stg_applications
+    description: Standardised application lifecycle records.
+    columns:
+      - name: application_id
+        tests: [not_null, unique]
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: application_status
+        tests:
+          - accepted_values:
+              values: ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED']
+      - name: requested_amount
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: '> 0'
+
+  - name: stg_payments
+    description: Standardised payment transactions.
+    columns:
+      - name: payment_id
+        tests: [not_null, unique]
+      - name: application_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_applications')
+              field: application_id
+      - name: payment_status
+        tests:
+          - accepted_values:
+              values: ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED']
+
