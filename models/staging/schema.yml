@@ -2,50 +2,202 @@ version: 2
 
 models:
   - name: stg_customers
-    description: Cleaned customer records at one row per customer.
+    description: >
+      Cleaned and typed customer records extracted from the RAW customer
+      VARIANT payload. One row represents one ingested customer record.
+
     columns:
       - name: customer_id
-        tests: [not_null, unique]
+        description: Business identifier for the customer
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_name
+        description: Standardised customer name
+        data_tests:
+          - not_null
+
       - name: email
-        tests: [not_null]
+        description: Customer email address standardised to lowercase
+        data_tests:
+          - not_null
+
       - name: customer_status
-        tests:
+        description: Current customer status
+        data_tests:
+          - not_null
           - accepted_values:
-              values: ['ACTIVE', 'INACTIVE']
+              arguments:
+                values:
+                  - ACTIVE
+                  - INACTIVE
+
+      - name: created_at
+        description: Timestamp when the customer was created
+        data_tests:
+          - not_null
+
+      - name: ingestion_record_id
+        description: Unique identifier assigned to the ingested RAW record
+        data_tests:
+          - not_null
+          - unique
+
+      - name: record_hash
+        description: SHA-256 hash used for record-level idempotency
+        data_tests:
+          - not_null
+
+      - name: batch_id
+        description: Identifier of the ingestion batch
+        data_tests:
+          - not_null
+
+      - name: load_timestamp
+        description: Timestamp when the record was loaded into RAW
+        data_tests:
+          - not_null
+
 
   - name: stg_applications
-    description: Standardised application lifecycle records.
+    description: >
+      Cleaned and typed application records extracted from the RAW application
+      JSON payload.
+
     columns:
       - name: application_id
-        tests: [not_null, unique]
+        description: Business identifier for the application
+        data_tests:
+          - not_null
+          - unique
+
       - name: customer_id
-        tests:
+        description: Customer that submitted the application
+        data_tests:
           - not_null
           - relationships:
-              to: ref('stg_customers')
-              field: customer_id
+              arguments:
+                to: ref('stg_customers')
+                field: customer_id
+
       - name: application_status
-        tests:
+        description: Current status of the application
+        data_tests:
+          - not_null
           - accepted_values:
-              values: ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED']
+              arguments:
+                values:
+                  - SUBMITTED
+                  - UNDER_REVIEW
+                  - APPROVED
+                  - REJECTED
+
+      - name: application_date
+        description: Date on which the application was submitted
+        data_tests:
+          - not_null
+
       - name: requested_amount
-        tests:
+        description: Monetary amount requested by the applicant
+        data_tests:
+          - not_null
           - dbt_utils.expression_is_true:
-              expression: '> 0'
+              arguments:
+                expression: "> 0"
+
+      - name: decision_date
+        description: >
+          Decision date for approved or rejected applications; null while an
+          application is submitted or under review.
+
+      - name: ingestion_record_id
+        description: Unique identifier assigned to the ingested RAW record
+        data_tests:
+          - not_null
+          - unique
+
+      - name: record_hash
+        description: SHA-256 hash used for record-level idempotency
+        data_tests:
+          - not_null
+
+      - name: batch_id
+        description: Identifier of the ingestion batch
+        data_tests:
+          - not_null
+
+      - name: load_timestamp
+        description: Timestamp when the record was loaded into RAW
+        data_tests:
+          - not_null
+
 
   - name: stg_payments
-    description: Standardised payment transactions.
+    description: >
+      Cleaned and typed payment records extracted from the RAW Parquet payload.
+
     columns:
       - name: payment_id
-        tests: [not_null, unique]
+        description: Business identifier for the payment
+        data_tests:
+          - not_null
+          - unique
+
       - name: application_id
-        tests:
+        description: Application associated with the payment
+        data_tests:
           - not_null
           - relationships:
-              to: ref('stg_applications')
-              field: application_id
-      - name: payment_status
-        tests:
-          - accepted_values:
-              values: ['PENDING', 'COMPLETED', 'FAILED', 'REFUNDED']
+              arguments:
+                to: ref('stg_applications')
+                field: application_id
 
+      - name: payment_amount
+        description: Monetary amount of the payment
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+      - name: payment_status
+        description: Current processing status of the payment
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - PENDING
+                  - COMPLETED
+                  - FAILED
+                  - REFUNDED
+
+      - name: payment_date
+        description: Timestamp associated with the payment transaction
+        data_tests:
+          - not_null
+
+      - name: payment_method
+        description: Method used to make the payment
+
+      - name: ingestion_record_id
+        description: Unique identifier assigned to the ingested RAW record
+        data_tests:
+          - not_null
+          - unique
+
+      - name: record_hash
+        description: SHA-256 hash used for record-level idempotency
+        data_tests:
+          - not_null
+
+      - name: batch_id
+        description: Identifier of the ingestion batch
+        data_tests:
+          - not_null
+
+      - name: load_timestamp
+        description: Timestamp when the record was loaded into RAW
+        data_tests:
+          - not_null
