@@ -247,7 +247,17 @@ begin
                 select 1
                 from DBT_MINI_PROJECT.AUDIT.FILE_LOAD_AUDIT previous
                 where previous.entity_name = :V_ENTITY_NAME
-                  and previous.file_status = 'LOADED'
+                  and
+                  (
+                      previous.file_status = 'LOADED'
+                      or
+                      (
+                          previous.file_status = 'SKIPPED'
+                          and previous.source_row_count > 0
+                          and previous.duplicate_row_count =
+                                previous.source_row_count
+                      )
+                  )
                   and
                   (
                       previous.full_file_path =
@@ -273,7 +283,17 @@ begin
                 select 1
                 from DBT_MINI_PROJECT.AUDIT.FILE_LOAD_AUDIT previous
                 where previous.entity_name = :V_ENTITY_NAME
-                  and previous.file_status = 'LOADED'
+                  and
+                  (
+                      previous.file_status = 'LOADED'
+                      or
+                      (
+                          previous.file_status = 'SKIPPED'
+                          and previous.source_row_count > 0
+                          and previous.duplicate_row_count =
+                                previous.source_row_count
+                      )
+                  )
                   and previous.full_file_path =
                         listed.stage_name
                         || '/'
@@ -286,7 +306,17 @@ begin
                 select 1
                 from DBT_MINI_PROJECT.AUDIT.FILE_LOAD_AUDIT previous
                 where previous.entity_name = :V_ENTITY_NAME
-                  and previous.file_status = 'LOADED'
+                  and
+                  (
+                      previous.file_status = 'LOADED'
+                      or
+                      (
+                          previous.file_status = 'SKIPPED'
+                          and previous.source_row_count > 0
+                          and previous.duplicate_row_count =
+                                previous.source_row_count
+                      )
+                  )
                   and previous.file_checksum =
                         listed.file_checksum
             )
