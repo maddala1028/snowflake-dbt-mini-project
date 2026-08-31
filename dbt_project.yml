@@ -20,7 +20,11 @@ clean-targets:
 models:
   snowflake_dbt_mini_project:
     staging:
-      +materialized: view
       +schema: staging
       +tags:
         - staging
+
+    silver:
+      +schema: silver
+      +tags:
+        - silver

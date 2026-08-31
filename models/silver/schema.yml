@@ -1,0 +1,157 @@
+version: 2
+
+models:
+  - name: silver_customers
+    description: >
+      Current-state customer records, deduplicated and incrementally merged
+      from the staging customer model.
+
+    columns:
+      - name: customer_id
+        description: Unique business identifier for a customer.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_name
+        data_tests:
+          - not_null
+
+      - name: email
+        data_tests:
+          - not_null
+
+      - name: customer_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - ACTIVE
+                  - INACTIVE
+
+      - name: ingestion_record_id
+        data_tests:
+          - not_null
+
+      - name: record_hash
+        data_tests:
+          - not_null
+
+      - name: load_timestamp
+        data_tests:
+          - not_null
+
+  - name: silver_applications
+    description: >
+      Current-state application records, deduplicated and incrementally
+      merged from the staging application model.
+
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "requested_amount > 0"
+
+    columns:
+      - name: application_id
+        description: Unique business identifier for an application.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        description: Customer who submitted the application.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('silver_customers')
+                field: customer_id
+
+      - name: application_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - SUBMITTED
+                  - UNDER_REVIEW
+                  - APPROVED
+                  - REJECTED
+
+      - name: application_date
+        data_tests:
+          - not_null
+
+      - name: requested_amount
+        data_tests:
+          - not_null
+
+      - name: ingestion_record_id
+        data_tests:
+          - not_null
+
+      - name: record_hash
+        data_tests:
+          - not_null
+
+      - name: load_timestamp
+        data_tests:
+          - not_null
+
+  - name: silver_payments
+    description: >
+      Current-state payment records, deduplicated and incrementally merged
+      from the staging payment model.
+
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "payment_amount > 0"
+
+    columns:
+      - name: payment_id
+        description: Unique business identifier for a payment.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: application_id
+        description: Application associated with the payment.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('silver_applications')
+                field: application_id
+
+      - name: payment_amount
+        data_tests:
+          - not_null
+
+      - name: payment_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - PENDING
+                  - COMPLETED
+                  - FAILED
+                  - REFUNDED
+
+      - name: payment_date
+        data_tests:
+          - not_null
+
+      - name: ingestion_record_id
+        data_tests:
+          - not_null
+
+      - name: record_hash
+        data_tests:
+          - not_null
+
+      - name: load_timestamp
+        data_tests:
+          - not_null  
