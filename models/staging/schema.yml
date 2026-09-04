@@ -4,14 +4,15 @@ models:
   - name: stg_customers
     description: >
       Cleaned and typed customer records extracted from the RAW customer
-      VARIANT payload. One row represents one ingested customer record.
+      VARIANT payload. One row represents one ingested customer record version,
+      identified by ingestion_record_id. A customer_id can appear in multiple
+      versions; Silver selects the current version and enforces customer uniqueness.
 
     columns:
       - name: customer_id
-        description: Business identifier for the customer
+        description: Business identifier for the customer; may repeat across ingested versions
         data_tests:
           - not_null
-          - unique
 
       - name: customer_name
         description: Standardised customer name
