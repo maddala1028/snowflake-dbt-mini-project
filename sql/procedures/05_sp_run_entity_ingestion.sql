@@ -95,6 +95,13 @@ begin
       That is a successful no-work outcome, not a pipeline failure.
     */
     if (V_FILES_SELECTED = 0) then
+        update DBT_MINI_PROJECT.AUDIT.INGESTION_BATCH_AUDIT
+           set batch_status = 'SKIPPED',
+               end_timestamp = current_timestamp(),
+               updated_at = current_timestamp()
+         where batch_id = :V_BATCH_ID
+           and batch_status = 'DISCOVERED';
+
         return object_construct(
             'status', 'SKIPPED',
             'step', 'DISCOVERY',
@@ -228,7 +235,8 @@ exception
          where batch_id = :V_BATCH_ID
            and batch_status not in (
                'COMPLETED',
-               'FAILED'
+               'FAILED',
+               'SKIPPED'
            );
 
         return object_construct(
