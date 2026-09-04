@@ -32,7 +32,7 @@ with source_data as (
         batch_id,
         run_mode,
         contract_version,
-        source_date,
+        source_date
         
 
     from {{ ref('stg_customers') }}
@@ -55,6 +55,55 @@ with source_data as (
 
 ),
 
+-- Include the existing Silver version for every incoming customer before
+-- ranking. An older arrival therefore cannot displace a newer stored version,
+-- even when that stored version is outside the three-day RAW lookback.
+-- Exact ordering ties retain the existing target. Nulls sort last explicitly.
+version_candidates as (
+
+    select source_data.*, 0 as existing_version_priority
+    from source_data
+
+    {% if is_incremental() %}
+
+    union all
+
+    select
+        target.customer_id,
+        target.customer_name,
+        target.email,
+        target.city,
+        target.customer_status,
+        target.created_at,
+        target.updated_at,
+        target.ingestion_record_id,
+        target.entity_name,
+        target.record_hash,
+        target.source_system,
+        target.source_object,
+        target.file_type,
+        target.file_name,
+        target.file_row_number,
+        target.file_content_key,
+        target.file_last_modified,
+        target.scan_start_time,
+        target.load_timestamp,
+        target.batch_id,
+        target.run_mode,
+        target.contract_version,
+        target.source_date,
+        1 as existing_version_priority
+    from {{ this }} as target
+    where exists (
+        select 1
+        from source_data as incoming
+        where incoming.customer_id = target.customer_id
+    )
+
+    {% endif %}
+
+),
+
 ranked as (
 
     select
@@ -62,20 +111,21 @@ ranked as (
         row_number() over (
             partition by customer_id
             order by
-                coalesce(updated_at, created_at, load_timestamp) desc,
-                load_timestamp desc,
-                file_last_modified desc,
-                ingestion_record_id desc
+                coalesce(updated_at, created_at, load_timestamp) desc nulls last,
+                load_timestamp desc nulls last,
+                file_last_modified desc nulls last,
+                ingestion_record_id desc nulls last,
+                existing_version_priority desc
         ) as row_num
 
-    from source_data
+    from version_candidates
 
 ),
 
 deduplicated as (
 
     select
-        * exclude (row_num)
+        * exclude (row_num, existing_version_priority)
 
     from ranked
     where row_num = 1

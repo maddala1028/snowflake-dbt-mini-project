@@ -1,0 +1,65 @@
+version: 2
+
+# Save as models/silver/silver_customers_unit_tests.yml.
+# Synthetic fixtures only. Requires stg_customers and silver_customers relations
+# to exist for type inference (they already exist in the development project).
+# Run: dbt test --select "silver_customers,test_type:unit"
+# Tests incremental SELECT output, NOT the final table after a MERGE.
+# Empty expected rows mean retain the current target without emitting an update.
+# Hash strings are synthetic distinct markers; hashing is not under test here.
+# Timestamps are fixed so tests do not depend on today's date.
+# This suite covers incremental mode only, not full-refresh or concurrency.
+
+unit_tests:
+  - name: customer_older_arrival_outside_lookback
+    description: "Target customer is outside the Sep 1 cutoff set by a different customer. Older incoming version must emit no merge rows."
+    model: silver_customers
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('stg_customers')
+        rows:
+          - {"customer_id":"UT_CUSTOMER","customer_name":"Unit Test Customer","email":"unit.test@example.com","city":"Edinburgh","customer_status":"ACTIVE","created_at":"2026-08-01 00:00:00","updated_at":"2026-09-02 12:00:00","ingestion_record_id":"UT_OLDER","entity_name":"CUSTOMERS","record_hash":"hash_older","source_system":"UNIT_TEST","source_object":"CUSTOMERS","file_type":"CSV","file_name":"unit_test.csv","file_row_number":1,"file_content_key":"synthetic","file_last_modified":"2026-09-04 13:00:00","scan_start_time":"2026-09-04 13:00:00","load_timestamp":"2026-09-04 13:00:00","batch_id":"UNIT_TEST_ONLY","run_mode":"TEST","contract_version":"1.0","source_date":"2026-09-04"}
+          - {"customer_id":"UT_CUSTOMER","customer_name":"Unit Test Customer","email":"unit.test@example.com","city":"Glasgow","customer_status":"ACTIVE","created_at":"2026-08-01 00:00:00","updated_at":"2026-09-03 12:00:00","ingestion_record_id":"UT_CURRENT","entity_name":"CUSTOMERS","record_hash":"hash_current","source_system":"UNIT_TEST","source_object":"CUSTOMERS","file_type":"CSV","file_name":"unit_test.csv","file_row_number":1,"file_content_key":"synthetic","file_last_modified":"2026-08-30 12:00:00","scan_start_time":"2026-08-30 12:00:00","load_timestamp":"2026-08-30 12:00:00","batch_id":"UNIT_TEST_ONLY","run_mode":"TEST","contract_version":"1.0","source_date":"2026-09-04"}
+      - input: this
+        rows:
+          - {"customer_id":"UT_CUSTOMER","customer_name":"Unit Test Customer","email":"unit.test@example.com","city":"Glasgow","customer_status":"ACTIVE","created_at":"2026-08-01 00:00:00","updated_at":"2026-09-03 12:00:00","ingestion_record_id":"UT_CURRENT","entity_name":"CUSTOMERS","record_hash":"hash_current","source_system":"UNIT_TEST","source_object":"CUSTOMERS","file_type":"CSV","file_name":"unit_test.csv","file_row_number":1,"file_content_key":"synthetic","file_last_modified":"2026-08-30 12:00:00","scan_start_time":"2026-08-30 12:00:00","load_timestamp":"2026-08-30 12:00:00","batch_id":"UNIT_TEST_ONLY","run_mode":"TEST","contract_version":"1.0","source_date":"2026-09-04"}
+          - {"customer_id":"UT_WATERMARK","customer_name":"Unit Test Customer","email":"unit.test@example.com","city":"Perth","customer_status":"ACTIVE","created_at":"2026-08-01 00:00:00","updated_at":"2026-09-04 12:00:00","ingestion_record_id":"UT_ANCHOR","entity_name":"CUSTOMERS","record_hash":"hash_anchor","source_system":"UNIT_TEST","source_object":"CUSTOMERS","file_type":"CSV","file_name":"unit_test.csv","file_row_number":1,"file_content_key":"synthetic","file_last_modified":"2026-09-04 12:00:00","scan_start_time":"2026-09-04 12:00:00","load_timestamp":"2026-09-04 12:00:00","batch_id":"UNIT_TEST_ONLY","run_mode":"TEST","contract_version":"1.0","source_date":"2026-09-04"}
+    expect:
+      rows: []
+
+  - name: customer_newer_arrival_updates
+    description: "Newer incoming business version must be emitted for merge."
+    model: silver_customers
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('stg_customers')
+        rows:
+          - {"customer_id":"UT_CUSTOMER","customer_name":"Unit Test Customer","email":"unit.test@example.com","city":"Aberdeen","customer_status":"ACTIVE","created_at":"2026-08-01 00:00:00","updated_at":"2026-09-05 12:00:00","ingestion_record_id":"UT_NEWER","entity_name":"CUSTOMERS","record_hash":"hash_newer","source_system":"UNIT_TEST","source_object":"CUSTOMERS","file_type":"CSV","file_name":"unit_test.csv","file_row_number":1,"file_content_key":"synthetic","file_last_modified":"2026-09-05 13:00:00","scan_start_time":"2026-09-05 13:00:00","load_timestamp":"2026-09-05 13:00:00","batch_id":"UNIT_TEST_ONLY","run_mode":"TEST","contract_version":"1.0","source_date":"2026-09-04"}
+      - input: this
+        rows:
+          - {"customer_id":"UT_CUSTOMER","customer_name":"Unit Test Customer","email":"unit.test@example.com","city":"Glasgow","customer_status":"ACTIVE","created_at":"2026-08-01 00:00:00","updated_at":"2026-09-03 12:00:00","ingestion_record_id":"UT_CURRENT","entity_name":"CUSTOMERS","record_hash":"hash_current","source_system":"UNIT_TEST","source_object":"CUSTOMERS","file_type":"CSV","file_name":"unit_test.csv","file_row_number":1,"file_content_key":"synthetic","file_last_modified":"2026-08-30 12:00:00","scan_start_time":"2026-08-30 12:00:00","load_timestamp":"2026-08-30 12:00:00","batch_id":"UNIT_TEST_ONLY","run_mode":"TEST","contract_version":"1.0","source_date":"2026-09-04"}
+          - {"customer_id":"UT_WATERMARK","customer_name":"Unit Test Customer","email":"unit.test@example.com","city":"Perth","customer_status":"ACTIVE","created_at":"2026-08-01 00:00:00","updated_at":"2026-09-04 12:00:00","ingestion_record_id":"UT_ANCHOR","entity_name":"CUSTOMERS","record_hash":"hash_anchor","source_system":"UNIT_TEST","source_object":"CUSTOMERS","file_type":"CSV","file_name":"unit_test.csv","file_row_number":1,"file_content_key":"synthetic","file_last_modified":"2026-09-04 12:00:00","scan_start_time":"2026-09-04 12:00:00","load_timestamp":"2026-09-04 12:00:00","batch_id":"UNIT_TEST_ONLY","run_mode":"TEST","contract_version":"1.0","source_date":"2026-09-04"}
+    expect:
+      rows: [{"customer_id":"UT_CUSTOMER","city":"Aberdeen","updated_at":"2026-09-05 12:00:00","ingestion_record_id":"UT_NEWER","record_hash":"hash_newer"}]
+
+  - name: customer_exact_order_tie_keeps_target
+    description: "All four ordering fields tie but payload/hash differ. Existing-target priority must suppress the conflicting incoming row."
+    model: silver_customers
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('stg_customers')
+        rows:
+          - {"customer_id":"UT_CUSTOMER","customer_name":"Unit Test Customer","email":"unit.test@example.com","city":"Edinburgh","customer_status":"ACTIVE","created_at":"2026-08-01 00:00:00","updated_at":"2026-09-04 12:00:00","ingestion_record_id":"UT_TIE","entity_name":"CUSTOMERS","record_hash":"hash_conflict","source_system":"UNIT_TEST","source_object":"CUSTOMERS","file_type":"CSV","file_name":"unit_test.csv","file_row_number":1,"file_content_key":"synthetic","file_last_modified":"2026-09-04 13:00:00","scan_start_time":"2026-09-04 13:00:00","load_timestamp":"2026-09-04 13:00:00","batch_id":"UNIT_TEST_ONLY","run_mode":"TEST","contract_version":"1.0","source_date":"2026-09-04"}
+      - input: this
+        rows:
+          - {"customer_id":"UT_CUSTOMER","customer_name":"Unit Test Customer","email":"unit.test@example.com","city":"Glasgow","customer_status":"ACTIVE","created_at":"2026-08-01 00:00:00","updated_at":"2026-09-04 12:00:00","ingestion_record_id":"UT_TIE","entity_name":"CUSTOMERS","record_hash":"hash_current","source_system":"UNIT_TEST","source_object":"CUSTOMERS","file_type":"CSV","file_name":"unit_test.csv","file_row_number":1,"file_content_key":"synthetic","file_last_modified":"2026-09-04 13:00:00","scan_start_time":"2026-09-04 13:00:00","load_timestamp":"2026-09-04 13:00:00","batch_id":"UNIT_TEST_ONLY","run_mode":"TEST","contract_version":"1.0","source_date":"2026-09-04"}
+    expect:
+      rows: []
+
+
