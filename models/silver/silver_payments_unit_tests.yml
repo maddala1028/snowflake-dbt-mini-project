@@ -1,0 +1,51 @@
+version: 2
+
+unit_tests:
+  - name: silver_payments_rejects_older_arrival
+    description: An older incoming version must not replace the current Silver payment.
+    model: silver_payments
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('stg_payments')
+        rows:
+          - {payment_id: PAY-001, payment_status: PENDING, payment_date: '2026-09-02', ingestion_record_id: ING-OLD, record_hash: hash-old, load_timestamp: '2026-09-08 10:00:00', file_last_modified: '2026-09-08 09:00:00'}
+      - input: this
+        rows:
+          - {payment_id: PAY-001, payment_status: COMPLETED, payment_date: '2026-09-05', ingestion_record_id: ING-CURRENT, record_hash: hash-current, load_timestamp: '2026-09-05 12:00:00', file_last_modified: '2026-09-05 11:00:00'}
+    expect:
+      rows: []
+
+  - name: silver_payments_emits_newer_arrival
+    description: A newer incoming version must be emitted for the incremental merge.
+    model: silver_payments
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('stg_payments')
+        rows:
+          - {payment_id: PAY-002, payment_status: COMPLETED, payment_date: '2026-09-06', ingestion_record_id: ING-NEW, record_hash: hash-new, load_timestamp: '2026-09-06 12:00:00', file_last_modified: '2026-09-06 11:00:00'}
+      - input: this
+        rows:
+          - {payment_id: PAY-002, payment_status: PENDING, payment_date: '2026-09-04', ingestion_record_id: ING-CURRENT, record_hash: hash-current, load_timestamp: '2026-09-04 12:00:00', file_last_modified: '2026-09-04 11:00:00'}
+    expect:
+      rows:
+        - {payment_id: PAY-002, payment_status: COMPLETED, payment_date: '2026-09-06', ingestion_record_id: ING-NEW, record_hash: hash-new}
+
+  - name: silver_payments_retains_target_on_exact_tie
+    description: Exact ordering ties must retain the existing target version.
+    model: silver_payments
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('stg_payments')
+        rows:
+          - {payment_id: PAY-003, payment_status: FAILED, payment_date: '2026-09-05', ingestion_record_id: ING-TIE, record_hash: hash-incoming, load_timestamp: '2026-09-05 12:00:00', file_last_modified: '2026-09-05 11:00:00'}
+      - input: this
+        rows:
+          - {payment_id: PAY-003, payment_status: COMPLETED, payment_date: '2026-09-05', ingestion_record_id: ING-TIE, record_hash: hash-current, load_timestamp: '2026-09-05 12:00:00', file_last_modified: '2026-09-05 11:00:00'}
+    expect:
+      rows: []
