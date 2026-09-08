@@ -1,0 +1,51 @@
+version: 2
+
+unit_tests:
+  - name: silver_applications_rejects_older_arrival
+    description: An older incoming version must not replace the current Silver application.
+    model: silver_applications
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('stg_applications')
+        rows:
+          - {application_id: APP-001, application_status: SUBMITTED, application_date: '2026-09-01', decision_date: null, ingestion_record_id: ING-OLD, record_hash: hash-old, load_timestamp: '2026-09-08 10:00:00', file_last_modified: '2026-09-08 09:00:00'}
+      - input: this
+        rows:
+          - {application_id: APP-001, application_status: APPROVED, application_date: '2026-09-01', decision_date: '2026-09-05', ingestion_record_id: ING-CURRENT, record_hash: hash-current, load_timestamp: '2026-09-05 12:00:00', file_last_modified: '2026-09-05 11:00:00'}
+    expect:
+      rows: []
+
+  - name: silver_applications_emits_newer_arrival
+    description: A newer incoming version must be emitted for the incremental merge.
+    model: silver_applications
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('stg_applications')
+        rows:
+          - {application_id: APP-002, application_status: APPROVED, application_date: '2026-09-01', decision_date: '2026-09-06', ingestion_record_id: ING-NEW, record_hash: hash-new, load_timestamp: '2026-09-06 12:00:00', file_last_modified: '2026-09-06 11:00:00'}
+      - input: this
+        rows:
+          - {application_id: APP-002, application_status: UNDER_REVIEW, application_date: '2026-09-01', decision_date: '2026-09-04', ingestion_record_id: ING-CURRENT, record_hash: hash-current, load_timestamp: '2026-09-04 12:00:00', file_last_modified: '2026-09-04 11:00:00'}
+    expect:
+      rows:
+        - {application_id: APP-002, application_status: APPROVED, decision_date: '2026-09-06', ingestion_record_id: ING-NEW, record_hash: hash-new}
+
+  - name: silver_applications_retains_target_on_exact_tie
+    description: Exact ordering ties must retain the existing target version.
+    model: silver_applications
+    overrides:
+      macros:
+        is_incremental: true
+    given:
+      - input: ref('stg_applications')
+        rows:
+          - {application_id: APP-003, application_status: REJECTED, application_date: '2026-09-01', decision_date: '2026-09-05', ingestion_record_id: ING-TIE, record_hash: hash-incoming, load_timestamp: '2026-09-05 12:00:00', file_last_modified: '2026-09-05 11:00:00'}
+      - input: this
+        rows:
+          - {application_id: APP-003, application_status: APPROVED, application_date: '2026-09-01', decision_date: '2026-09-05', ingestion_record_id: ING-TIE, record_hash: hash-current, load_timestamp: '2026-09-05 12:00:00', file_last_modified: '2026-09-05 11:00:00'}
+    expect:
+      rows: []

@@ -53,6 +53,54 @@ with source_data as (
 
 ),
 
+-- Rank each incoming payment alongside its current Silver version.
+-- This prevents an older late arrival from replacing newer stored data,
+-- including when the stored version is outside the three-day RAW lookback.
+-- Exact ordering ties retain the existing target; nulls sort last explicitly.
+version_candidates as (
+
+    select source_data.*, 0 as existing_version_priority
+    from source_data
+
+    {% if is_incremental() %}
+
+    union all
+
+    select
+        target.payment_id,
+        target.application_id,
+        target.payment_amount,
+        target.payment_status,
+        target.payment_date,
+        target.payment_method,
+        target.ingestion_record_id,
+        target.entity_name,
+        target.record_hash,
+        target.source_system,
+        target.source_object,
+        target.file_type,
+        target.file_name,
+        target.file_row_number,
+        target.file_content_key,
+        target.file_last_modified,
+        target.scan_start_time,
+        target.load_timestamp,
+        target.batch_id,
+        target.run_mode,
+        target.contract_version,
+        target.source_date,
+        1 as existing_version_priority
+    from {{ this }} as target
+    where exists (
+        select 1
+        from source_data as incoming
+        where incoming.payment_id = target.payment_id
+    )
+
+    {% endif %}
+
+),
+
 ranked as (
 
     select
@@ -60,19 +108,20 @@ ranked as (
         row_number() over (
             partition by payment_id
             order by
-                coalesce(payment_date, load_timestamp) desc,
-                load_timestamp desc,
-                file_last_modified desc,
-                ingestion_record_id desc
+                coalesce(payment_date, load_timestamp) desc nulls last,
+                load_timestamp desc nulls last,
+                file_last_modified desc nulls last,
+                ingestion_record_id desc nulls last,
+                existing_version_priority desc
         ) as row_num
 
-    from source_data
+    from version_candidates
 
 ),
 
 deduplicated as (
 
-    select * exclude (row_num)
+    select * exclude (row_num, existing_version_priority)
     from ranked
     where row_num = 1
 
