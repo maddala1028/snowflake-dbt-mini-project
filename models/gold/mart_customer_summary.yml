@@ -1,0 +1,17 @@
+version: 2
+models:
+  - name: mart_customer_summary
+    description: One dashboard-ready row per known customer with application and payment KPIs.
+    columns:
+      - name: customer_key
+        data_tests: [not_null, unique]
+      - name: customer_id
+        data_tests: [not_null, unique]
+      - name: application_count
+        data_tests: [not_null]
+      - name: payment_count
+        data_tests: [not_null]
+      - name: has_no_applications
+        data_tests: [not_null]
+      - name: has_no_completed_payment
+        data_tests: [not_null]

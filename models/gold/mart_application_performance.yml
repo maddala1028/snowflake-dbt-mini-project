@@ -1,0 +1,19 @@
+version: 2
+models:
+  - name: mart_application_performance
+    description: Daily application KPIs for operational and management dashboards.
+    columns:
+      - name: application_date_key
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: application_count
+        data_tests: [not_null]
+      - name: total_requested_amount
+        data_tests: [not_null]
+      - name: orphan_application_count
+        data_tests: [not_null]

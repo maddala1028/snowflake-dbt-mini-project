@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: dim_applications
+    description: Current application dimension with warehouse keys and explicit orphan-customer handling.
+    columns:
+      - name: application_key
+        description: Deterministic warehouse surrogate key for the application.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_key
+        description: Customer surrogate key; unresolved customers use the Unknown Customer key.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
+
+      - name: application_id
+        data_tests:
+          - not_null
+          - unique
+
+      - name: application_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED, UNKNOWN]
+
+      - name: requested_amount
+        data_tests:
+          - not_null
+
+      - name: is_orphan_customer
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false
+
+      - name: is_unknown_application
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false

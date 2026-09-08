@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: Current customer dimension with a deterministic surrogate key and an Unknown member.
+    columns:
+      - name: customer_key
+        description: Deterministic warehouse surrogate key for the customer.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        description: Source-system customer business key, or __UNKNOWN__ for the Unknown member.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: customer_name
+        data_tests:
+          - not_null
+
+      - name: customer_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ACTIVE, INACTIVE, UNKNOWN]
+
+      - name: is_unknown_customer
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false
