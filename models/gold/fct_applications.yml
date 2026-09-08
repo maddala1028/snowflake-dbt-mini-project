@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: fct_applications
+    description: Application-grain fact containing additive measures, status flags and conformed dimension keys.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "requested_amount > 0"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "decision_turnaround_days >= 0"
+          config:
+            where: "decision_turnaround_days is not null"
+
+    columns:
+      - name: application_key
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_applications')
+                field: application_key
+
+      - name: customer_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
+
+      - name: application_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+      - name: decision_date_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+      - name: application_id
+        data_tests:
+          - not_null
+          - unique
+
+      - name: application_count
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1]
+                quote: false
+
+      - name: is_orphan_customer
+        data_tests:
+          - not_null

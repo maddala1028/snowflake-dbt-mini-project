@@ -1,0 +1,22 @@
+version: 2
+models:
+  - name: mart_payment_summary
+    description: Daily payment KPIs by payment method for dashboard reporting.
+    columns:
+      - name: payment_summary_key
+        data_tests: [not_null, unique]
+      - name: payment_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: payment_method
+        data_tests: [not_null]
+      - name: payment_count
+        data_tests: [not_null]
+      - name: total_payment_amount
+        data_tests: [not_null]
+      - name: orphan_payment_count
+        data_tests: [not_null]

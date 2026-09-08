@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: fct_payments
+    description: Payment-grain fact containing conformed keys, additive measures and explicit orphan handling.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "payment_amount > 0"
+
+    columns:
+      - name: payment_key
+        data_tests:
+          - not_null
+          - unique
+
+      - name: application_key
+        description: Resolved application key; orphan payments use the Unknown Application key.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_applications')
+                field: application_key
+
+      - name: customer_key
+        description: Resolved customer key inherited from the application.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
+
+      - name: payment_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+
+      - name: payment_id
+        data_tests:
+          - not_null
+          - unique
+
+      - name: payment_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [PENDING, COMPLETED, FAILED, REFUNDED]
+
+      - name: payment_count
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1]
+                quote: false
+
+      - name: payment_amount
+        data_tests:
+          - not_null
+
+      - name: is_orphan_application
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false

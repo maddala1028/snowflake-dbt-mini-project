@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: Reporting calendar covering 2020 through 2030 at one row per date.
+    columns:
+      - name: date_key
+        description: Integer date key in YYYYMMDD format.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: calendar_date
+        data_tests:
+          - not_null
+          - unique
+
+      - name: calendar_year
+        data_tests:
+          - not_null
+
+      - name: is_weekend
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false
