@@ -46,6 +46,8 @@ jobs:
       - name: Validate Snowflake connection
         run: dbt debug --target ci --profiles-dir .github/dbt
 
+      - name: Bootstrap isolated CI schemas
+        run: dbt run --full-refresh --target ci --profiles-dir .github/dbt
       - name: Build and test isolated CI schemas
         run: dbt build --full-refresh --target ci --profiles-dir .github/dbt
 
