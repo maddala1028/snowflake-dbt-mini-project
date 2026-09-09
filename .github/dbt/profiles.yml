@@ -14,3 +14,16 @@ snowflake_dbt_mini_project:
       threads: 4
       client_session_keep_alive: false
       query_tag: dbt_github_ci
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: DBT_PROD_ROLE
+      database: DBT_MINI_PROJECT
+      warehouse: DBT_WH
+      schema: DBT_MINI_PROD
+      threads: 4
+      client_session_keep_alive: false
+      query_tag: dbt_github_cd
