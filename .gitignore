@@ -5,3 +5,5 @@ logs/
 profiles.yml
 .env
 
+
+!.github/dbt/profiles.yml
