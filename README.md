@@ -1,6 +1,6 @@
 # Snowflake + dbt Mini Project
 
-## Current implementation — verified through 4 September 2026
+## Current implementation 
 
 A three-entity data engineering prototype combining S3 file ingestion, a
 metadata-driven Snowflake ingestion framework, and dbt staging and Silver
